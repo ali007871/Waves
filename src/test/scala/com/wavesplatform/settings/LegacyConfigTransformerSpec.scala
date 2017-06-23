@@ -171,9 +171,9 @@ class LegacyConfigTransformerSpec extends FreeSpec with Matchers {
           |    price-assets = []
           |    predefined-pairs = []
           |    order-history-file = ""
-          |    is-migrate-to-new-order-history-storage = no
           |    max-timestamp-diff = 3h
           |    blacklisted-assets = []
+          |    blacklisted-names = []
           |  }
           |  synchronization.score-ttl = 90s
           |}
@@ -210,8 +210,8 @@ class LegacyConfigTransformerSpec extends FreeSpec with Matchers {
           |    price-assets = []
           |    predefined-pairs = []
           |    max-timestamp-diff = 3h
-          |    is-migrate-to-new-order-history-storage = no
           |    blacklisted-assets = []
+          |    blacklisted-names = []
           |  }
           |  synchronization.score-ttl = 90s
           |}

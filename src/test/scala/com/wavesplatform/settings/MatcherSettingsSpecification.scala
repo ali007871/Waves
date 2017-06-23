@@ -35,8 +35,8 @@ class MatcherSettingsSpecification extends FlatSpec with Matchers {
         |      {amountAsset = "DHgwrRvVyqJsepd32YbBqUeDH4GJ1N984X8QoekjgH8J", priceAsset = "8LQW8f7P5d5PZM7GtZEBgaqRPGSzS3DfPuiXrURJ4AJS"},
         |    ]
         |    max-timestamp-diff = 3h
-        |    is-migrate-to-new-order-history-storage = no
         |    blacklisted-assets: []
+        |    blacklisted-names: []
         |  }
         |}
       """.stripMargin).resolve()

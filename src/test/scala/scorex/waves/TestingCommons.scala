@@ -134,7 +134,6 @@ trait TestingCommons extends Suite with BeforeAndAfterAll with Eventually {
       |    snapshots-directory: ${waves.directory}"/snapshots"
       |    order-history-file = ""
       |    max-timestamp-diff = 3h
-      |    is-migrate-to-new-order-history-storage = no
       |  }
       |  miner {
       |    enable: yes

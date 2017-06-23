@@ -8,6 +8,7 @@ import scorex.transaction.assets.exchange.AssetPair
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.FiniteDuration
+import scala.util.matching.Regex
 
 case class MatcherSettings(enable: Boolean,
                            account: String,
@@ -24,7 +25,8 @@ case class MatcherSettings(enable: Boolean,
                            maxTimestampDiff: FiniteDuration,
                            orderHistoryFile: String,
                            isMigrateToNewOrderHistoryStorage: Boolean,
-                           blacklistedAssets: Set[String]
+                           blacklistedAssets: Set[String],
+                           blacklistedNames: Seq[Regex]
                           )
 
 
@@ -50,12 +52,13 @@ object MatcherSettings {
 
     val orderHistoryFile = config.as[String](s"$configPath.order-history-file")
 
-    val isMigrateToNewOrderHistoryStorage = config.as[Boolean](s"$configPath.is-migrate-to-new-order-history-storage")
+    val isMigrateToNewOrderHistoryStorage = !new File(orderHistoryFile).exists()
 
     val blacklistedAssets = config.as[List[String]](s"$configPath.blacklisted-assets")
+    val blacklistedNames = config.as[List[String]](s"$configPath.blacklisted-names").map(_.r)
 
     MatcherSettings(enabled, account, bindAddress, port, minOrderFee, orderMatchTxFee, journalDirectory,
       snapshotsDirectory, snapshotsInterval, maxOpenOrders, baseAssets, basePairs, maxTimestampDiff,
-      orderHistoryFile, isMigrateToNewOrderHistoryStorage, blacklistedAssets.toSet)
+      orderHistoryFile, isMigrateToNewOrderHistoryStorage, blacklistedAssets.toSet, blacklistedNames)
   }
 }

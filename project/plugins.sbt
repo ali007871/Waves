@@ -16,6 +16,8 @@ addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.5.0")
 
 addSbtPlugin("com.github.gseitz" % "sbt-release" % "1.0.3")
 
+addSbtPlugin("com.typesafe.sbt" % "sbt-aspectj" % "0.10.6")
+
 libraryDependencies += "com.typesafe" % "config" % "1.3.0"
 
 libraryDependencies += "org.vafer" % "jdeb" % "1.5" artifacts Artifact("jdeb", "jar", "jar")

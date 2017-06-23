@@ -7,6 +7,7 @@ import akka.stream.ActorMaterializer
 import com.wavesplatform.matcher.api.MatcherApiRoute
 import com.wavesplatform.matcher.market.{MatcherActor, OrderHistoryActor}
 import com.wavesplatform.settings.RestAPISettings
+import kamon.Kamon
 import scorex.api.http.CompositeHttpService
 import scorex.app.Application
 import scorex.transaction.{BlockStorage, TransactionModule}
@@ -50,6 +51,7 @@ trait MatcherApplication extends ScorexLogging {
   @volatile var matcherServerBinding: ServerBinding = _
 
   def shutdownMatcher(): Unit = {
+    Kamon.shutdown()
     Await.result(matcherServerBinding.unbind(), 10.seconds)
   }
 
@@ -57,6 +59,8 @@ trait MatcherApplication extends ScorexLogging {
     log.info(s"Starting matcher on: ${matcherSettings.bindAddress}:${matcherSettings.port} ...")
 
     implicit val materializer = ActorMaterializer()
+
+    Kamon.start()
 
     val combinedRoute = CompositeHttpService(actorSystem, matcherApiTypes, matcherApiRoutes, restAPISettings).compositeRoute
     matcherServerBinding = Await.result(Http().bindAndHandle(combinedRoute, matcherSettings.bindAddress,
