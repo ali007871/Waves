@@ -61,6 +61,8 @@ class OrderHistoryActor(val settings: MatcherSettings, val storedState: StoredSt
       orderHistory.didOrderCanceled(ev)
     case req: GetOrderHistory =>
       fetchOrderHistory(req)
+    case req: GetAllOrderHistory =>
+      fetchAllOrderHistory(req)
     case ValidateOrder(o) =>
       sender() ! ValidateOrderResult(validateNewOrder(o))
     case ValidateCancelOrder(co) =>
@@ -78,6 +80,13 @@ class OrderHistoryActor(val settings: MatcherSettings, val storedState: StoredSt
   def fetchOrderHistory(req: GetOrderHistory): Unit = {
     val res: Seq[(String, OrderInfo, Option[Order])] =
       orderHistory.getOrdersByPairAndAddress(req.assetPair, req.address)
+        .map(id => (id, orderHistory.getOrderInfo(id), orderHistory.getOrder(id))).toSeq.sortBy(_._3.map(_.timestamp).getOrElse(-1L))
+    sender() ! GetOrderHistoryResponse(res)
+  }
+
+  def fetchAllOrderHistory(req: GetAllOrderHistory): Unit = {
+    val res: Seq[(String, OrderInfo, Option[Order])] =
+      orderHistory.getAllOrdersByAddress(req.address)
         .map(id => (id, orderHistory.getOrderInfo(id), orderHistory.getOrder(id))).toSeq.sortBy(_._3.map(_.timestamp).getOrElse(-1L))
     sender() ! GetOrderHistoryResponse(res)
   }
@@ -117,6 +126,7 @@ object OrderHistoryActor {
 
   sealed trait OrderHistoryRequest
   case class GetOrderHistory(assetPair: AssetPair, address: String) extends OrderHistoryRequest
+  case class GetAllOrderHistory(address: String) extends OrderHistoryRequest
   case class GetOrderStatus(assetPair: AssetPair, id: String) extends OrderHistoryRequest
   case class DeleteOrderFromHistory(assetPair: AssetPair, address: String, id: String) extends OrderHistoryRequest
   case class ValidateOrder(order: Order) extends OrderHistoryRequest

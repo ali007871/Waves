@@ -11,7 +11,7 @@ import com.google.common.primitives.Longs
 import com.wavesplatform.matcher.MatcherSettings
 import com.wavesplatform.matcher.market.MatcherActor.{GetMarkets, GetMarketsResponse}
 import com.wavesplatform.matcher.market.OrderBookActor._
-import com.wavesplatform.matcher.market.OrderHistoryActor.{DeleteOrderFromHistory, GetOrderHistory, GetOrderStatus, GetTradableBalance}
+import com.wavesplatform.matcher.market.OrderHistoryActor._
 import com.wavesplatform.settings.RestAPISettings
 import io.swagger.annotations._
 import play.api.libs.json._
@@ -42,7 +42,7 @@ case class MatcherApiRoute(application: Application,
 
   override lazy val route: Route =
     pathPrefix("matcher") {
-      matcherPublicKey ~ orderBook ~ place ~ getOrderHistory ~ getTradableBalance ~ orderStatus ~
+      matcherPublicKey ~ orderBook ~ place ~ getOrderHistory ~ getAllOrderHistory ~ getTradableBalance ~ orderStatus ~
         historyDelete ~ cancel ~ orderbooks ~ orderBookDelete
     }
 
@@ -201,6 +201,19 @@ case class MatcherApiRoute(application: Application,
 
       }
     }
+  }
+
+  @Path("/orders/{address}")
+  @ApiOperation(value = "All Order History by address",
+    notes = "Get All Order History for a given address",
+    httpMethod = "GET")
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "address", value = "Address", dataType = "string", paramType = "path")
+   ))
+  def getAllOrderHistory: Route = (path("orders" / Segment) & get & withAuth) { addr =>
+      complete((orderHistory ? GetAllOrderHistory(addr))
+        .mapTo[MatcherResponse]
+        .map(r => r.code -> r.json))
   }
 
   @Path("/orderbook/{amountAsset}/{priceAsset}/tradableBalance/{address}")

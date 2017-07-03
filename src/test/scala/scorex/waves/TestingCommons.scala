@@ -3,11 +3,11 @@ package scorex.waves
 import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.util.Timeout
-import com.ning.http.client.Response
 import com.typesafe.config.ConfigFactory
 import com.wavesplatform.Application
 import com.wavesplatform.settings.WavesSettings
 import dispatch.{Http, Req, url}
+import org.asynchttpclient.Response
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfterAll, Suite}
 import play.api.libs.json._

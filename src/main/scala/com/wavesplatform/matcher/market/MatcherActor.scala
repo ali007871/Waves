@@ -68,13 +68,9 @@ class MatcherActor(orderHistory: ActorRef, storedState: StoredState, wallet: Wal
   }
 
   def checkBlacklistRegex(aPair: AssetPair): Validation = {
-    if (tradedPairs.get(aPair).isEmpty) {
       val (amountName, priceName) = (getAssetName(aPair.amountAsset), getAssetName(aPair.priceAsset))
       settings.blacklistedNames.forall(_.findFirstIn(amountName).isEmpty) :| s"Invalid Asset Name: $amountName" &&
         settings.blacklistedNames.forall(_.findFirstIn(priceName).isEmpty) :| s"Invalid Asset Name: $priceName"
-    } else {
-      Validation.success
-    }
   }
 
   def checkBlacklistId(aPair: AssetPair): Validation = {
