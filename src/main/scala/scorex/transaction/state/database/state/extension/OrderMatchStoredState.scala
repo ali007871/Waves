@@ -71,9 +71,13 @@ class OrderMatchStoredState(storage: StateStorageI with OrderMatchStorageI) exte
   }
 
   def findPrevOrderMatchTxs(order: Order): Set[ExchangeTransaction] = {
-    val orderDay = calcStartDay(order.expiration)
+    findPrevOrderMatchTxs(order.expiration, order.idStr)
+  }
+
+  def findPrevOrderMatchTxs(expiration: Long, orderId: String): Set[ExchangeTransaction] = {
+    val orderDay = calcStartDay(expiration)
     if (storage.containsSavedDays(orderDay)) {
-      parseTxSeq(storage.getOrderMatchTxByDay(calcStartDay(order.expiration), Base58.encode(order.id))
+      parseTxSeq(storage.getOrderMatchTxByDay(calcStartDay(expiration), orderId)
         .getOrElse(emptyTxIdSeq))
     } else Set.empty[ExchangeTransaction]
   }

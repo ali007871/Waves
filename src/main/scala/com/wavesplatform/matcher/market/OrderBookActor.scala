@@ -7,7 +7,7 @@ import com.wavesplatform.matcher.MatcherSettings
 import com.wavesplatform.matcher.api.{CancelOrderRequest, MatcherResponse}
 import com.wavesplatform.matcher.market.OrderBookActor._
 import com.wavesplatform.matcher.market.OrderHistoryActor._
-import com.wavesplatform.matcher.model.Events.{Event, OrderAdded, OrderExecuted}
+import com.wavesplatform.matcher.model.Events.{Event, ExchangeTransactionCreated, OrderAdded, OrderExecuted}
 import com.wavesplatform.matcher.model.MatcherModel._
 import com.wavesplatform.matcher.model._
 import play.api.libs.json._
@@ -95,7 +95,7 @@ class OrderBookActor(assetPair: AssetPair, val orderHistory: ActorRef,
   }
 
   def onCancelOrder(cancel: CancelOrder): Unit = {
-    orderHistory ! ValidateCancelOrder(cancel)
+    orderHistory ! ValidateCancelOrder(cancel, NTP.correctedTime())
     apiSender = Some(sender())
     cancellable = Some(context.system.scheduler.scheduleOnce(ValidationTimeout, self, ValidationTimeoutExceeded))
     context.become(waitingValidation)
@@ -146,7 +146,7 @@ class OrderBookActor(assetPair: AssetPair, val orderHistory: ActorRef,
   }
 
   def onAddOrder(order: Order): Unit = {
-    orderHistory ! ValidateOrder(order)
+    orderHistory ! ValidateOrder(order, NTP.correctedTime())
     apiSender = Some(sender())
     cancellable = Some(context.system.scheduler.scheduleOnce(ValidationTimeout, self, ValidationTimeoutExceeded))
     context.become(waitingValidation)
@@ -203,8 +203,8 @@ class OrderBookActor(assetPair: AssetPair, val orderHistory: ActorRef,
       case e@OrderExecuted(o, c) =>
         val txVal = createTransaction(o, c)
         txVal match {
-          case Right(tx) if isValid(tx) =>
-            sendToNetwork(tx)
+          case Right(tx) if isValid(tx) && sendToNetwork(tx) =>
+            context.system.eventStream.publish(ExchangeTransactionCreated(tx))
             processEvent(e)
             if (e.submittedRemaining > 0)
               Some(o.partial(e.submittedRemaining))
@@ -232,7 +232,7 @@ object OrderBookActor {
   def name(assetPair: AssetPair): String = assetPair.toString
 
   val MaxDepth = 50
-  val ValidationTimeout = 3.seconds
+  val ValidationTimeout: FiniteDuration = 5.seconds
 
   //protocol
   sealed trait OrderBookRequest {

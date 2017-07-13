@@ -25,6 +25,7 @@ trait OrderHistory {
 }
 
 case class OrderHistoryImpl(p: OrderHistoryStorage) extends OrderHistory with ScorexLogging {
+  val MaxOrdersPerAddress = 1000
 
   def savePairAddress(assetPair: AssetPair, address: String, orderId: String): Unit = {
     val ts = System.currentTimeMillis()
@@ -33,6 +34,10 @@ case class OrderHistoryImpl(p: OrderHistoryStorage) extends OrderHistory with Sc
       case Some(prev) =>
         log.info(s"savePairAddress prev.size: ${prev.size}")
         if (!prev.contains(orderId)) p.pairAddressToOrderIds.put(pairAddress, prev + orderId)
+        if (prev.size > MaxOrdersPerAddress) {
+          prev.collectFirst { case id if getOrderStatus(id).isFinal => id}
+            .foreach{ id => deleteOrder(assetPair, address, id ) }
+        }
       case _ =>
         p.pairAddressToOrderIds.put(pairAddress, Set(orderId))
     }
@@ -111,7 +116,7 @@ case class OrderHistoryImpl(p: OrderHistoryStorage) extends OrderHistory with Sc
 
   override def getOrdersByPairAndAddress(assetPair: AssetPair, address: String): Set[String] = {
     val pairAddressKey = OrderHistoryStorage.assetPairAddressKey(assetPair, address)
-    Option(p.pairAddressToOrderIds.get(pairAddressKey)).getOrElse(Set())
+    Option(p.pairAddressToOrderIds.get(pairAddressKey)).map(_.take(MaxOrdersPerAddress)).getOrElse(Set())
   }
 
   override def getAllOrdersByAddress(address: String): Set[String] = {

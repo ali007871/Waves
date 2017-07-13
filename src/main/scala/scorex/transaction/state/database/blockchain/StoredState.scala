@@ -27,7 +27,7 @@ import scala.util.control.NonFatal
   *
   * Use fromDB method of StoredState object to create new instance
   */
-class StoredState(protected[blockchain] val storage: StateStorageI with OrderMatchStorageI,
+class StoredState(val storage: StateStorageI with OrderMatchStorageI,
                   val leaseExtendedState: LeaseExtendedState,
                   val assetsExtension: AssetsExtendedState,
                   val incrementingTimestampValidator: IncrementingTimestampValidator,

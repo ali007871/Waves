@@ -45,7 +45,7 @@ trait ExchangeTransactionCreator {
     transactionModule.isValid(orderMatch, orderMatch.timestamp)
   }
 
-  def sendToNetwork(tx: SignedTransaction): Unit = {
+  def sendToNetwork(tx: SignedTransaction): Boolean = {
     transactionModule.onNewOffchainTransaction(tx)
   }
 }

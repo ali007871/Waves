@@ -22,6 +22,7 @@ class MatcherSettingsSpecification extends FlatSpec with Matchers {
         |    journal-directory: ${waves.directory}"/journal"
         |    snapshots-directory: ${waves.directory}"/snapshots"
         |    order-history-file = ${waves.directory}"/matcher/orderhistory.dat"
+        |    tx-history-file = ${waves.directory}"/matcher/txhistory.dat"
         |    snapshots-interval: 1d
         |    max-open-orders: 1000
         |    price-assets: [

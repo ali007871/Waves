@@ -26,7 +26,8 @@ case class MatcherSettings(enable: Boolean,
                            orderHistoryFile: String,
                            isMigrateToNewOrderHistoryStorage: Boolean,
                            blacklistedAssets: Set[String],
-                           blacklistedNames: Seq[Regex]
+                           blacklistedNames: Seq[Regex],
+                           txHistoryFile: String
                           )
 
 
@@ -51,6 +52,7 @@ object MatcherSettings {
     val maxTimestampDiff = config.as[FiniteDuration](s"$configPath.max-timestamp-diff")
 
     val orderHistoryFile = config.as[String](s"$configPath.order-history-file")
+    val txHistoryFile = config.as[String](s"$configPath.tx-history-file")
 
     val isMigrateToNewOrderHistoryStorage = !new File(orderHistoryFile).exists()
 
@@ -59,6 +61,6 @@ object MatcherSettings {
 
     MatcherSettings(enabled, account, bindAddress, port, minOrderFee, orderMatchTxFee, journalDirectory,
       snapshotsDirectory, snapshotsInterval, maxOpenOrders, baseAssets, basePairs, maxTimestampDiff,
-      orderHistoryFile, isMigrateToNewOrderHistoryStorage, blacklistedAssets.toSet, blacklistedNames)
+      orderHistoryFile, isMigrateToNewOrderHistoryStorage, blacklistedAssets.toSet, blacklistedNames, txHistoryFile)
   }
 }

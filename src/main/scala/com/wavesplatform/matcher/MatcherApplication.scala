@@ -5,7 +5,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.stream.ActorMaterializer
 import com.wavesplatform.matcher.api.MatcherApiRoute
-import com.wavesplatform.matcher.market.{MatcherActor, OrderHistoryActor}
+import com.wavesplatform.matcher.market.{MatcherActor, MatcherTransactionWriter, OrderHistoryActor}
 import com.wavesplatform.settings.RestAPISettings
 import kamon.Kamon
 import scorex.api.http.CompositeHttpService
@@ -35,7 +35,7 @@ trait MatcherApplication extends ScorexLogging {
   def storedState: StoredState = blockStorage.state.asInstanceOf[StoredState]
 
   lazy val matcherApiRoutes = Seq(
-    MatcherApiRoute(this.asInstanceOf[Application], matcher, orderHistory, restAPISettings, matcherSettings)
+    MatcherApiRoute(this.asInstanceOf[Application], matcher, orderHistory, txWriter, restAPISettings, matcherSettings)
   )
 
   lazy val matcherApiTypes = Seq(
@@ -47,6 +47,9 @@ trait MatcherApplication extends ScorexLogging {
 
   lazy val orderHistory: ActorRef = actorSystem.actorOf(OrderHistoryActor.props(matcherSettings, storedState, wallet),
     OrderHistoryActor.name)
+
+  lazy val txWriter: ActorRef = actorSystem.actorOf(MatcherTransactionWriter.props(matcherSettings),
+    MatcherTransactionWriter.name)
 
   @volatile var matcherServerBinding: ServerBinding = _
 

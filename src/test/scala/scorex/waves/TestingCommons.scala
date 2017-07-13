@@ -133,6 +133,7 @@ trait TestingCommons extends Suite with BeforeAndAfterAll with Eventually {
       |    journal-directory: ${waves.directory}"/journal"
       |    snapshots-directory: ${waves.directory}"/snapshots"
       |    order-history-file = ""
+      |    tx-history-file = ""
       |    max-timestamp-diff = 3h
       |  }
       |  miner {

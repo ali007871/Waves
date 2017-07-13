@@ -1,6 +1,7 @@
 package scorex.api.http
 
 import javax.ws.rs.Path
+
 import scala.util.Success
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
@@ -9,20 +10,22 @@ import io.swagger.annotations._
 import play.api.libs.json.{JsArray, JsNumber, Json}
 import scorex.account.Account
 import scorex.crypto.encode.Base58
+import scorex.transaction.state.database.blockchain.StoredState
+import scorex.transaction.state.database.state.extension.OrderMatchStoredState
 import scorex.transaction.{History, LagonakiState, SimpleTransactionModule}
 
 @Path("/transactions")
 @Api(value = "/transactions", description = "Information about transactions")
 case class TransactionsApiRoute(
     settings: RestAPISettings,
-    state: LagonakiState,
+    state: StoredState,
     history: History,
     transactionModule: SimpleTransactionModule) extends ApiRoute with CommonApiFunctions {
   val MaxTransactionsPerRequest = 10000
 
   override lazy val route =
     pathPrefix("transactions") {
-      unconfirmed ~ addressLimit ~ info
+      unconfirmed ~ addressLimit ~ info ~ order
     }
 
   //TODO implement general pagination
@@ -73,5 +76,16 @@ case class TransactionsApiRoute(
   @ApiOperation(value = "Unconfirmed", notes = "Get list of unconfirmed transactions", httpMethod = "GET")
   def unconfirmed: Route = (path("unconfirmed") & get) {
     complete(JsArray(transactionModule.unconfirmedTxs.map(_.json)))
+  }
+
+  @Path("/order/{orderId}/{expiration}")
+  @ApiOperation(value = "Get transaction by order", notes = "Get transaction by order", httpMethod = "GET")
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(name = "orderId", value = "Order Id", required = true, dataType = "string", paramType = "path"),
+  new ApiImplicitParam(name = "expiration", value = "Expiration timestamp of order", required = true, dataType = "long", paramType = "path")
+  ))
+  def order: Route = (path("order" / Segment / LongNumber) & get) { (id, expiration) =>
+    val txJsons = new OrderMatchStoredState(state.storage).findPrevOrderMatchTxs(expiration, id).map(_.json)
+    complete(Json.arr(txJsons))
   }
 }

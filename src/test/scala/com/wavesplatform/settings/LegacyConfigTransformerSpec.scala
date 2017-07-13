@@ -171,6 +171,7 @@ class LegacyConfigTransformerSpec extends FreeSpec with Matchers {
           |    price-assets = []
           |    predefined-pairs = []
           |    order-history-file = ""
+          |    tx-history-file = ""
           |    max-timestamp-diff = 3h
           |    blacklisted-assets = []
           |    blacklisted-names = []
@@ -205,6 +206,7 @@ class LegacyConfigTransformerSpec extends FreeSpec with Matchers {
           |    journal-directory = ""
           |    snapshots-directory = ""
           |    order-history-file = ""
+          |    tx-history-file = ""
           |    snapshots-interval = 10m
           |    max-open-orders = 1000
           |    price-assets = []
