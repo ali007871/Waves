@@ -32,14 +32,16 @@ case class OrderHistoryImpl(p: OrderHistoryStorage) extends OrderHistory with Sc
     val pairAddress = OrderHistoryStorage.assetPairAddressKey(assetPair, address)
     Option(p.pairAddressToOrderIds.get(pairAddress)) match {
       case Some(prev) =>
-        log.info(s"savePairAddress prev.size: ${prev.size}")
-        if (!prev.contains(orderId)) p.pairAddressToOrderIds.put(pairAddress, prev + orderId)
-        if (prev.size > MaxOrdersPerAddress) {
-          prev.collectFirst { case id if getOrderStatus(id).isFinal => id}
-            .foreach{ id => deleteOrder(assetPair, address, id ) }
+        log.info(s"savePairAddress prev.size: ${prev.length}")
+        var r = prev
+        if (prev.length >= MaxOrdersPerAddress) {
+          val (p1, p2) = prev.span(!getOrderStatus(_).isInstanceOf[LimitOrder.Cancelled])
+          r = if (p2.isEmpty) p1 else p1 ++ p2.tail
+
         }
+        p.pairAddressToOrderIds.put(pairAddress, r :+ orderId)
       case _ =>
-        p.pairAddressToOrderIds.put(pairAddress, Set(orderId))
+        p.pairAddressToOrderIds.put(pairAddress, Array(orderId))
     }
     log.info(s"savePairAddress lasts: ${System.currentTimeMillis() - ts} ms")
   }
@@ -116,7 +118,7 @@ case class OrderHistoryImpl(p: OrderHistoryStorage) extends OrderHistory with Sc
 
   override def getOrdersByPairAndAddress(assetPair: AssetPair, address: String): Set[String] = {
     val pairAddressKey = OrderHistoryStorage.assetPairAddressKey(assetPair, address)
-    Option(p.pairAddressToOrderIds.get(pairAddressKey)).map(_.take(MaxOrdersPerAddress)).getOrElse(Set())
+    Option(p.pairAddressToOrderIds.get(pairAddressKey)).map(_.takeRight(MaxOrdersPerAddress).toSet).getOrElse(Set())
   }
 
   override def getAllOrdersByAddress(address: String): Set[String] = {
@@ -132,7 +134,7 @@ case class OrderHistoryImpl(p: OrderHistoryStorage) extends OrderHistory with Sc
     val pairAddress = OrderHistoryStorage.assetPairAddressKey(assetPair, address)
     Option(p.pairAddressToOrderIds.get(pairAddress)) match {
       case Some(prev) =>
-        if (prev.contains(orderId)) p.pairAddressToOrderIds.put(pairAddress, prev - orderId)
+        if (prev.contains(orderId)) p.pairAddressToOrderIds.put(pairAddress, prev.filterNot(_ == orderId))
       case _ =>
     }
   }
