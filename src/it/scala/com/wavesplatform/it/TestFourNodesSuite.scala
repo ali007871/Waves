@@ -48,6 +48,7 @@ class TestFourNodesSuite extends FreeSpec with BeforeAndAfterAll with ScorexLogg
   }
 
   override def nestedSuites: IndexedSeq[Suite] = IndexedSeq(
+    new WideStateGenerationSpec(allNodes),
     new ValidChainGenerationSpec(allNodes),
     new BurnTransactionSpecification(allNodes, notMiner),
     new IssueTransactionSpecification(allNodes, notMiner),
