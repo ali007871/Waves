@@ -8,6 +8,7 @@ import io.swagger.annotations._
 import scorex.BroadcastRoute
 import scorex.api.http._
 import scorex.transaction.TransactionModule
+import scorex.transaction.assets.exchange.ExchangeTransaction
 
 @Path("/assets/broadcast")
 @Api(value = "assets")
@@ -15,7 +16,7 @@ case class AssetsBroadcastApiRoute(settings: RestAPISettings, transactionModule:
   extends ApiRoute with BroadcastRoute {
 
   override val route: Route = pathPrefix("assets" / "broadcast") {
-    issue ~ reissue ~ transfer ~ burnRoute ~ batchTransfer
+    issue ~ reissue ~ transfer ~ burnRoute ~ batchTransfer ~ exchange
   }
 
   @Path("/issue")
@@ -127,6 +128,28 @@ case class AssetsBroadcastApiRoute(settings: RestAPISettings, transactionModule:
   def transfer: Route = (path("transfer") & post) {
     json[SignedTransferRequest] { transferReq =>
       doBroadcast(transferReq.toTx)
+    }
+  }
+
+  @Path("/exchange")
+  @ApiOperation(value = "Broadcast signed Exchange transaction",
+    notes = "Publish signed Exchange transaction to the Blockchain",
+    httpMethod = "POST",
+    consumes = "application/json",
+    produces = "application/json")
+  @ApiImplicitParams(Array(
+    new ApiImplicitParam(
+      name = "body",
+      value = "Json with signed Transfer transaction",
+      required = true,
+      paramType = "body",
+      dataType = "scorex.api.http.assets.SignedExchangeRequest")))
+  @ApiResponses(Array(
+    new ApiResponse(code = 200, message = "Json with signed Exchange transfer transaction"),
+    new ApiResponse(code = 400, message = "Json with error description", response = classOf[ApiErrorResponse])))
+  def exchange: Route = (path("exchange") & post) {
+    json[SignedExchangeRequest] { req =>
+      doBroadcast(req.toTx)
     }
   }
 }

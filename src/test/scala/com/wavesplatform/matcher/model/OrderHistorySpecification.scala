@@ -138,7 +138,7 @@ class OrderHistorySpecification extends PropSpec
     oh.getOrdersByPairAndAddress(pair, ord1.senderPublicKey.address) shouldBe Set(ord1.idStr)
 
     oh.getOpenVolume(AssetAcc(ord2.senderPublicKey, pair.amountAsset)) shouldBe
-      OpenPortfolio.limitSubstract(ord2.matcherFee*2/12, 20000000L)
+      math.max(0L, OrderInfo.safeSum(ord2.matcherFee*2/12, -20000000L))
     oh.getOpenVolume(AssetAcc(ord2.senderPublicKey, pair.priceAsset)) shouldBe 0.00085*20000000L
     oh.getOrdersByPairAndAddress(pair, ord2.senderPublicKey.address) shouldBe Set(ord2.idStr)
 
@@ -179,7 +179,7 @@ class OrderHistorySpecification extends PropSpec
 
   }
 
-  property("Partially will own order") {
+  property("Partially with own order") {
     val pk = new PrivateKeyAccount("private".getBytes("utf-8"))
     val pair = AssetPair(None, Some("BTC".getBytes))
     val ord1 = buy(pair, 0.0008, 100000000, Some(pk), Some(300000L))

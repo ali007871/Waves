@@ -1,14 +1,12 @@
 package com.wavesplatform.matcher.market
 
-import java.io.File
-
 import akka.actor.{Actor, Props}
 import akka.http.scaladsl.model.StatusCodes
 import com.wavesplatform.matcher.MatcherSettings
 import com.wavesplatform.matcher.api.{BadMatcherResponse, MatcherResponse}
 import com.wavesplatform.matcher.market.OrderBookActor.{CancelOrder, GetOrderStatusResponse}
 import com.wavesplatform.matcher.market.OrderHistoryActor._
-import com.wavesplatform.matcher.model.Events.{OrderAdded, OrderCanceled, OrderExecuted}
+import com.wavesplatform.matcher.model.Events.{Event, OrderAdded, OrderCanceled, OrderExecuted}
 import com.wavesplatform.matcher.model.LimitOrder.Filled
 import com.wavesplatform.matcher.model._
 import com.wavesplatform.utils
@@ -22,9 +20,13 @@ import scorex.transaction.state.database.blockchain.StoredState
 import scorex.utils.NTP
 import scorex.wallet.Wallet
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+
 class OrderHistoryActor(val settings: MatcherSettings, val storedState: StoredState, val wallet: Wallet)
   extends Actor with OrderValidator {
   val RequestTTL: Int = 5*1000
+  val UpdateOpenPortfolioDelay: FiniteDuration = 30 seconds
 
   val db: MVStore = utils.createMVStore(settings.orderHistoryFile)
   val storage = new OrderHistoryStorage(db)
@@ -66,11 +68,14 @@ class OrderHistoryActor(val settings: MatcherSettings, val storedState: StoredSt
     case ev: OrderAdded =>
       orderHistory.didOrderAccepted(ev)
     case ev: OrderExecuted =>
-      orderHistory.didOrderExecuted(ev)
+      orderHistory.didOrderExecutedUnconfirmed(ev)
+      context.system.scheduler.scheduleOnce(UpdateOpenPortfolioDelay, self, UpdateOpenPortfolio(ev))
     case ev: OrderCanceled =>
       orderHistory.didOrderCanceled(ev)
     case RecoverFromOrderBook(ob) =>
       recoverFromOrderBook(ob)
+    case UpdateOpenPortfolio(ev) =>
+      orderHistory.saveOpenPortfolio(ev)
   }
 
   def fetchOrderHistory(req: GetOrderHistory): Unit = {
@@ -159,4 +164,5 @@ object OrderHistoryActor {
     val code = StatusCodes.OK
   }
 
+  case class UpdateOpenPortfolio(event: Event)
 }
