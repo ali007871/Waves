@@ -29,11 +29,9 @@ case class OrderHistoryImpl(p: OrderHistoryStorage) extends OrderHistory with Sc
   val MaxOrdersPerAddress = 1000
 
   def savePairAddress(assetPair: AssetPair, address: String, orderId: String): Unit = {
-    val ts = System.currentTimeMillis()
     val pairAddress = OrderHistoryStorage.assetPairAddressKey(assetPair, address)
     Option(p.pairAddressToOrderIds.get(pairAddress)) match {
       case Some(prev) =>
-        log.info(s"savePairAddress prev.size: ${prev.length}")
         var r = prev
         if (prev.length >= MaxOrdersPerAddress) {
           val (p1, p2) = prev.span(!getOrderStatus(_).isInstanceOf[LimitOrder.Cancelled])
@@ -44,40 +42,31 @@ case class OrderHistoryImpl(p: OrderHistoryStorage) extends OrderHistory with Sc
       case _ =>
         p.pairAddressToOrderIds.put(pairAddress, Array(orderId))
     }
-    log.info(s"savePairAddress lasts: ${System.currentTimeMillis() - ts} ms")
   }
 
   def saveOrdeInfo(event: Event): Unit = {
-    val ts = System.currentTimeMillis()
     Events.createOrderInfo(event).foreach{ case(orderId, oi) =>
       p.ordersInfo.put(orderId, getOrderInfo(orderId).combine(oi).jsonStr)
       log.debug(s"Changed OrderInfo for: $orderId -> " + getOrderInfo(orderId))
     }
-    log.info(s"saveOrderInfo lasts: ${System.currentTimeMillis() - ts} ms")
   }
 
   def saveOpenPortfolio(event: Event): Unit = {
-    val ts = System.currentTimeMillis()
     Events.createOpenPortfolio(event).foreach{ case(addr, op) =>
       val prev = Option(p.addressToOrderPortfolio.get(addr)).map(OpenPortfolio(_)).getOrElse(OpenPortfolio.empty)
       p.addressToOrderPortfolio.put(addr, prev.combine(op).orders)
       log.debug(s"Changed OpenPortfolio for: $addr -> " + p.addressToOrderPortfolio.get(addr).toString)
     }
-    log.info(s"saveOpenPortfolio lasts: ${System.currentTimeMillis() - ts} ms")
   }
 
   def saveOrder(order: Order): Unit = {
-    val ts = System.currentTimeMillis()
     if (!p.orders.containsKey(order.idStr)) {
       p.orders.putIfAbsent(order.idStr, order.jsonStr)
     }
-    log.info(s"saveOrder lasts: ${System.currentTimeMillis() - ts} ms")
   }
 
   def deleteFromOrders(orderId: String): Unit = {
-    val ts = System.currentTimeMillis()
     p.orders.remove(orderId)
-    log.info(s"saveOrder lasts: ${System.currentTimeMillis() - ts} ms")
   }
 
   override def didOrderAccepted(event: OrderAdded): Unit = {
@@ -122,12 +111,12 @@ case class OrderHistoryImpl(p: OrderHistoryStorage) extends OrderHistory with Sc
 
   override def getOpenVolume(assetAcc: AssetAcc): Long = {
     val asset = assetAcc.assetId.map(Base58.encode).getOrElse(AssetPair.WavesName)
-    Option(p.addressToOrderPortfolio.get(assetAcc.account.address)).flatMap(_.get(asset)).getOrElse(0L)
+    Option(p.addressToOrderPortfolio.get(assetAcc.account.address)).flatMap(_.get(asset)).map(math.max(0L, _)).getOrElse(0L)
   }
 
   override def getOrdersByPairAndAddress(assetPair: AssetPair, address: String): Set[String] = {
     val pairAddressKey = OrderHistoryStorage.assetPairAddressKey(assetPair, address)
-    Option(p.pairAddressToOrderIds.get(pairAddressKey)).map(_.takeRight(MaxOrdersPerAddress).toSet).getOrElse(Set())
+    Option(p.pairAddressToOrderIds.get(pairAddressKey)).map(_.takeRight(100).toSet).getOrElse(Set())
   }
 
   override def getAllOrdersByAddress(address: String): Set[String] = {

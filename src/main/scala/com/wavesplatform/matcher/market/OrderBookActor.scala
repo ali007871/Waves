@@ -209,7 +209,13 @@ class OrderBookActor(assetPair: AssetPair, val orderHistory: ActorRef,
             if (e.submittedRemaining > 0)
               Some(o.partial(e.submittedRemaining))
             else None
+          case Right(tx) =>
+            log.info("Invalid tx: " + Json.prettyPrint(tx.json))
+            val canceled = Events.OrderCanceled(c)
+            processEvent(canceled)
+            Some(o)
           case _ =>
+            log.info("Can't create tx for o1: " + Json.prettyPrint(o.order.json) + "\n, o2: " + Json.prettyPrint(c.order.json))
             val canceled = Events.OrderCanceled(c)
             processEvent(canceled)
             Some(o)

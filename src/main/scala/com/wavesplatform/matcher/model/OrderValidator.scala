@@ -18,6 +18,7 @@ trait OrderValidator {
   val orderHistory: OrderHistory
 
   lazy val matcherPubKey: PublicKeyAccount = wallet.privateKeyAccount(settings.account).get
+  val MinExpiration = 60 * 1000L
 
   def isBalanceWithOpenOrdersEnough(order: Order): Validation = {
     def notEnoughError(tBal: Long, oBal: Long, needs: Long): String = s"Not enough balance: [$tBal, $oBal], needs: $needs"
@@ -28,13 +29,13 @@ trait OrderValidator {
     val (feeTBal, feeOBal) = (storedState.tradableAssetBalance(feeAcc), orderHistory.getOpenVolume(feeAcc))
 
     if (acc != feeAcc) {
-      (assTBal - assOBal >= order.getSpendAmount(order.price, order.amount).getOrElse(0L)) :|
-        notEnoughError(assTBal, assOBal, order.getSpendAmount(order.price, order.amount).getOrElse(0L)) &&
+      (assTBal - assOBal >= order.getSpendAmount(order.price, order.amount).getOrElse(Long.MaxValue)) :|
+        notEnoughError(assTBal, assOBal, order.getSpendAmount(order.price, order.amount).getOrElse(Long.MaxValue)) &&
         (feeTBal - feeOBal >= order.matcherFee) :| notEnoughError(feeTBal, feeOBal, order.matcherFee)
     }
     else {
-      (assTBal - assOBal >= order.getSpendAmount(order.price, order.amount).getOrElse(0L) + order.matcherFee) :|
-        notEnoughError(assTBal, assOBal, order.getSpendAmount(order.price, order.amount).getOrElse(0L) + order.matcherFee)
+      (assTBal - assOBal >= order.getSpendAmount(order.price, order.amount).getOrElse(Long.MaxValue) + order.matcherFee) :|
+        notEnoughError(assTBal, assOBal, order.getSpendAmount(order.price, order.amount).getOrElse(Long.MaxValue) + order.matcherFee)
     }
   }
 
@@ -47,6 +48,7 @@ trait OrderValidator {
     //  s"Open orders count limit exceeded (Max = ${settings.maxOpenOrders})" &&
     val v =
       (order.matcherPublicKey == matcherPubKey) :| "Incorrect matcher public key" &&
+        (order.expiration > NTP.correctedTime() + MinExpiration) :| "Order expiration should be > 1 min" &&
         order.isValid(NTP.correctedTime()) &&
         LimitOrder.validateIntegerAmount(storedState, LimitOrder(order)) &&
         (order.matcherFee >= settings.minOrderFee) :| s"Order matcherFee should be >= ${settings.minOrderFee}" &&
